@@ -1,0 +1,30 @@
+<html>
+<head>
+    <title>Fijas y Picas</title>
+</head>
+<body>
+    <h1>Fijas y Picas</h1>
+    <p>¡Bienvenido al juego de Fijas y Picas!</p>
+    <p>Intenta adivinar el número secreto de 4 dígitos. Cada vez que hagas un intento, recibirás información sobre cuántas cifras has acertado en la posición correcta (fijas) y cuántas cifras has acertado pero en la posición incorrecta (picas).</p>
+    <p>¡Buena suerte!</p>
+
+    <input type="text" id="numberInput" placeholder="Ingresa un numero de 4 dígitos no repetidos">
+    <button onclick="validarNumber()" id="validateButton">Validar</button>
+    <p id="result"></p>
+
+    <script>
+        async function validarNumber() {
+            const numberInput = document.getElementById('numberInput').value;
+            const response = await fetch(`/validate/${numberInput}`);
+            const data = await response.json();
+            const resultElement = document.getElementById('result');
+            if (data.valid) {
+                resultElement.textContent = 'Número válido';
+                resultElement.style.color = 'green';
+            } else {
+                resultElement.textContent = 'Número inválido';
+                resultElement.style.color = 'red';
+            }
+        }
+    </script>
+</html>

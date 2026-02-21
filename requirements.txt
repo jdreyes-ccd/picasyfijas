@@ -1,0 +1,8 @@
+fastapi
+uvicorn
+pytest
+pytest-bdd
+pytest-cov
+jinja2
+playwright
+httpx

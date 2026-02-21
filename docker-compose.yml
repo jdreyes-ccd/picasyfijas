@@ -1,0 +1,24 @@
+services:
+  webapp:
+    build: .
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/validate/1234"]
+      interval: 50s
+      timeout: 20s
+      retries: 5
+  unittests:
+    build: .
+    command: pytest
+    volumes:
+      - .:/app
+    depends_on:
+      - webapp
+  e2e:
+    build: .
+    command: pytest e2e
+    volumes:
+      - .:/app
+    depends_on:
+      - webapp
