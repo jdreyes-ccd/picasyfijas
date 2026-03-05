@@ -145,6 +145,7 @@ def submit_guess(game_id: str, guess_data: GuessRequest):
             raise HTTPException(status_code=400, detail=str(e))
         
         game_result = game.add_guess(guess_data.guess, fijas, picas)
+        game_manager.save_game(game)
         
         return {
             "game_id": game.game_id,
@@ -216,6 +217,7 @@ def submit_guess_multiplayer(game_id: str, player_number: int, guess_data: Guess
     
     # Añadir intento con lógica de turnos
     game_result = game.add_guess_multiplayer(player_number, guess_data.guess, fijas, picas)
+    game_manager.save_game(game)
     
     # Obtener los intentos del jugador actual
     if player_number == 1:

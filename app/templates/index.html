@@ -409,6 +409,7 @@
             won: false,
             waitingGameId: null,
             pollingInterval: null,
+            gamePollingInterval: null,  // Polling para sincronizar durante el juego
             currentTurn: 1,  // En multijugador, de quién es el turno
             player2Name: null  // En multijugador, nombre del otro jugador
         };
@@ -420,6 +421,7 @@
 
         function showMenu() {
             if (gameState.pollingInterval) clearInterval(gameState.pollingInterval);
+            if (gameState.gamePollingInterval) clearInterval(gameState.gamePollingInterval);
             gameState = {
                 mode: null,
                 gameId: null,
@@ -430,10 +432,101 @@
                 won: false,
                 waitingGameId: null,
                 pollingInterval: null,
+                gamePollingInterval: null,
                 currentTurn: 1,
                 player2Name: null
             };
+            localStorage.removeItem('gameState');
             showScreen('menuScreen');
+        }
+
+        function saveGameState() {
+            const stateToSave = {
+                mode: gameState.mode,
+                gameId: gameState.gameId,
+                playerName: gameState.playerName,
+                playerNumber: gameState.playerNumber,
+                attemptsLeft: gameState.attemptsLeft,
+                guesses: gameState.guesses,
+                currentTurn: gameState.currentTurn,
+                player2Name: gameState.player2Name
+            };
+            localStorage.setItem('gameState', JSON.stringify(stateToSave));
+            console.log('✅ Estado guardado en localStorage:', stateToSave);
+        }
+
+        async function restoreGameSession() {
+            const savedState = localStorage.getItem('gameState');
+            console.log('📍 Intentando restaurar sesión. LocalStorage:', savedState);
+            
+            if (!savedState) {
+                console.log('❌ No hay sesión guardada');
+                return;
+            }
+
+            try {
+                const state = JSON.parse(savedState);
+                console.log('📋 Estado parseado:', state);
+                
+                // Verificar si la partida existe y sigue activa en el servidor
+                const response = await fetch(`/game/${state.gameId}`);
+                if (!response.ok) {
+                    console.log('❌ Partida no encontrada en servidor');
+                    localStorage.removeItem('gameState');
+                    return;
+                }
+
+                const gameData = await response.json();
+                console.log('🎮 Estado del servidor:', gameData);
+                
+                // Solo restaurar si la partida no ha terminado
+                if (gameData.status === 'finished') {
+                    console.log('❌ Partida ya terminó');
+                    localStorage.removeItem('gameState');
+                    return;
+                }
+
+                // Restaurar estado del cliente
+                gameState.mode = state.mode;
+                gameState.gameId = state.gameId;
+                gameState.playerName = state.playerName;
+                gameState.playerNumber = state.playerNumber;
+                gameState.currentTurn = gameData.current_turn;
+                gameState.player2Name = gameData.player2_name;
+
+                // Obtener datos específicos del jugador
+                if (state.mode === 'solo') {
+                    // Modo SOLO
+                    gameState.attemptsLeft = gameData.attempts_left;
+                    gameState.guesses = gameData.guesses;
+                } else if (state.playerNumber === 1) {
+                    // Multijugador - Jugador 1
+                    gameState.attemptsLeft = gameData.player1_attempts_left;
+                    gameState.guesses = gameData.player1_guesses;
+                } else if (state.playerNumber === 2) {
+                    // Multijugador - Jugador 2
+                    gameState.attemptsLeft = gameData.player2_attempts_left;
+                    gameState.guesses = gameData.player2_guesses;
+                }
+
+                console.log('✅ Sesión restaurada:', gameState);
+
+                // Mostrar pantalla de juego restaurada
+                document.getElementById('playerDisplay').textContent = state.playerName;
+                const modoText = state.mode === 'solo' ? 'Solo vs Máquina' : 'Multijugador (Turnos)';
+                document.getElementById('modeDisplay').textContent = modoText;
+                
+                updateGameScreen();
+                showScreen('gameScreen');
+                
+                // Reanudar polling si es multijugador
+                if (state.mode === 'multiplayer') {
+                    startGamePolling();
+                }
+            } catch (error) {
+                console.error('❌ Error al restaurar sesión:', error);
+                localStorage.removeItem('gameState');
+            }
         }
 
         function showModeSelection() { showScreen('modeScreen'); }
@@ -465,10 +558,12 @@
                 gameState.gameId = data.game_id;
                 gameState.attemptsLeft = data.attempts_left;
                 gameState.guesses = [];
+                gameState.mode = 'solo';
 
                 document.getElementById('playerDisplay').textContent = gameState.playerName;
                 document.getElementById('modeDisplay').textContent = 'Solo vs Máquina';
                 updateGameScreen();
+                saveGameState();
                 showScreen('gameScreen');
             } catch (error) {
                 alert('Error: ' + error.message);
@@ -586,9 +681,12 @@
 
                 guessInput.value = '';
                 updateGameScreen();
+                saveGameState();
 
                 if (data.won === true) {
                     showResult(true, data.message);
+                } else if (data.won === 'draw') {
+                    showResult('draw', data.message);
                 } else if (data.won === false) {
                     showResult(false, data.message);
                 }
@@ -601,6 +699,21 @@
         function showResult(won, message) {
             const resultContent = document.getElementById('resultContent');
             if (won) {
+                if (won === 'draw') {
+                    resultContent.className = 'result-draw';
+                    const modoText = gameState.mode === 'solo' ? 'Solo vs Máquina' : 'Multijugador';
+                    resultContent.innerHTML = `
+                        <div class="result-title">🤝 EMPATE 🤝</div>
+                        <div class="result-message">${message}</div>
+                        <div class="stats-summary">
+                            <p><strong>Intentos Utilizados:</strong> ${gameState.guesses.length}</p>
+                            <p><strong>Modo:</strong> ${modoText}</p>
+                        </div>
+                    `;
+                    gameState.won = false;
+                    showScreen('resultScreen');
+                    return;
+                }
                 resultContent.className = 'result-win';
                 const modoText = gameState.mode === 'solo' ? 'Solo vs Máquina' : 'Multijugador';
                 resultContent.innerHTML = `
@@ -644,8 +757,11 @@
                 gameState.playerName = playerName;
                 gameState.gameId = data.game_id;
                 gameState.waitingGameId = data.game_id;
+                gameState.mode = 'multiplayer';
+                gameState.playerNumber = 1;
                 document.getElementById('waitingGameId').textContent = `ID de juego: ${data.game_id}`;
                 
+                saveGameState();
                 showScreen('waitingPlayerScreen');
                 
                 // Iniciar polling para detectar cuando el otro jugador se une
@@ -676,12 +792,57 @@
                         document.getElementById('playerDisplay').textContent = gameState.playerName;
                         document.getElementById('modeDisplay').textContent = 'Multijugador (Turnos)';
                         updateGameScreen();
+                        saveGameState();
                         showScreen('gameScreen');
+                        
+                        // Iniciar polling de sincronización durante el juego
+                        startGamePolling();
                     }
                 } catch (error) {
                     console.log('Polling error:', error);
                 }
             }, 2000);
+        }
+
+        async function startGamePolling() {
+            // Polling continuo para mantener sincronizado el estado del juego
+            gameState.gamePollingInterval = setInterval(async () => {
+                try {
+                    const response = await fetch(`/game/${gameState.gameId}`);
+                    if (!response.ok) return;
+                    
+                    const gameData = await response.json();
+                    
+                    // Actualizar el turno actual
+                    gameState.currentTurn = gameData.current_turn;
+                    
+                    // Actualizar intentos y guesses del jugador actual
+                    if (gameState.playerNumber === 1) {
+                        gameState.attemptsLeft = gameData.player1_attempts_left;
+                        gameState.guesses = gameData.player1_guesses;
+                    } else {
+                        gameState.attemptsLeft = gameData.player2_attempts_left;
+                        gameState.guesses = gameData.player2_guesses;
+                    }
+                    
+                    // Si el juego terminó
+                    if (gameData.status === 'finished') {
+                        clearInterval(gameState.gamePollingInterval);
+                        if (gameData.winner === 'Empate') {
+                            showResult('draw', 'Empate: ambos jugadores agotaron sus intentos sin lograr 4 fijas.');
+                        } else if (gameData.winner === gameState.playerName) {
+                            showResult(true, `¡${gameData.winner} ganó!`);
+                        } else {
+                            showResult(false, `${gameData.winner} ganó la partida.`);
+                        }
+                    } else {
+                        // Actualizar la UI si el turno cambió
+                        updateGameScreen();
+                    }
+                } catch (error) {
+                    console.log('Game polling error:', error);
+                }
+            }, 1000);  // Polling cada 1 segundo durante el juego
         }
 
         async function loadWaitingGames() {
@@ -727,12 +888,25 @@
                 gameState.playerNumber = 2;  // Es el segundo jugador
                 gameState.gameId = gameId;
                 gameState.mode = 'multiplayer';
-                gameState.currentTurn = 1;  // El Jugador 1 comienza
+                
+                // Obtener el estado completo del juego
+                const gameResponse = await fetch(`/game/${gameId}`);
+                if (!gameResponse.ok) throw new Error('Error al obtener el estado del juego');
+                const gameData = await gameResponse.json();
+                
+                gameState.currentTurn = gameData.current_turn;
+                gameState.attemptsLeft = gameData.player2_attempts_left;
+                gameState.guesses = gameData.player2_guesses;
+                gameState.player2Name = playerName;
 
                 document.getElementById('playerDisplay').textContent = playerName;
                 document.getElementById('modeDisplay').textContent = 'Multijugador (Turnos)';
                 updateGameScreen();
+                saveGameState();
                 showScreen('gameScreen');
+                
+                // Iniciar polling de sincronización para el Jugador 2
+                startGamePolling();
             } catch (error) {
                 alert('Error: ' + error.message);
             }
@@ -740,10 +914,14 @@
 
         function cancelWaiting() {
             if (gameState.pollingInterval) clearInterval(gameState.pollingInterval);
+            if (gameState.gamePollingInterval) clearInterval(gameState.gamePollingInterval);
             selectMode('multiplayer');
         }
 
         document.addEventListener('DOMContentLoaded', function() {
+            // Intentar restaurar sesión anterior
+            restoreGameSession();
+            
             document.getElementById('playerName').addEventListener('keypress', function(e) {
                 if (e.key === 'Enter') startSoloGame();
             });

@@ -86,7 +86,7 @@ def test_calculate_fijas_picas_no_match():
 def test_calculate_fijas_picas_only_fijas():
     """Prueba con solo fijas"""
     result = calculate_fijas_picas("1234", "1256")
-    assert result["fijas"] == 1  # 1 en pos 0
+    assert result["fijas"] == 2  # 1 en pos 0, 2 en pos 1
     assert result["picas"] == 0
 
 
@@ -96,3 +96,67 @@ def test_calculate_fijas_picas_invalid_numbers():
         calculate_fijas_picas("1234", "123")  # Muy corto
     with pytest.raises(ValueError):
         calculate_fijas_picas("1234", "1123")  # Dígitos repetidos
+
+
+# Tests para Game model con persistencia
+def test_game_solo_add_guess():
+    """Prueba agregar intento a juego SOLO"""
+    from app.models import Game, GameMode
+    game = Game(
+        mode=GameMode.SOLO,
+        player1_name="Test",
+        secret_number="1234",
+        max_attempts=10
+    )
+    
+    result = game.add_guess("1234", 4, 0)
+    assert result["won"] == True
+    assert game.attempts_left == 9
+
+
+def test_game_multiplayer_add_guess_and_turn_change():
+    """Prueba cambio de turno en multijugador"""
+    from app.models import Game, GameMode
+    game = Game(
+        mode=GameMode.MULTIPLAYER,
+        player1_name="Alice",
+        secret_number="1234",
+        max_attempts=2
+    )
+    game.player2_name = "Bob"
+    game.secret_number_p2 = "5678"
+    
+    # Jugador 1 intenta (falla)
+    result = game.add_guess_multiplayer(1, "9012", 0, 0)
+    assert result["won"] is None
+    assert game.current_turn == 2  # Cambió a turno de Jugador 2
+    
+    # Jugador 2 intenta (falla)
+    result = game.add_guess_multiplayer(2, "3456", 0, 0)
+    assert result["won"] is None
+    assert game.current_turn == 1  # Volvió a turno de Jugador 1
+
+
+def test_game_multiplayer_draw():
+    """Prueba empate cuando ambos agotan intentos"""
+    from app.models import Game, GameMode, GameStatus
+    game = Game(
+        mode=GameMode.MULTIPLAYER,
+        player1_name="Alice",
+        secret_number="1234",
+        max_attempts=2
+    )
+    game.player2_name = "Bob"
+    game.secret_number_p2 = "5678"
+    
+    # Jugador 1 falla 2 veces
+    game.add_guess_multiplayer(1, "9012", 0, 0)
+    game.add_guess_multiplayer(1, "3456", 0, 0)
+    
+    # Jugador 2 falla 2 veces (último intento triggers draw check)
+    game.add_guess_multiplayer(2, "1111", 0, 0)
+    result = game.add_guess_multiplayer(2, "2222", 0, 0)
+    
+    assert result["won"] == "draw"
+    assert game.winner == "Empate"
+    assert game.status == GameStatus.FINISHED

@@ -6,3 +6,5 @@ pytest-cov
 jinja2
 playwright
 httpx
+sqlalchemy
+psycopg2-binary

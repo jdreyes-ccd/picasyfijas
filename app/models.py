@@ -21,7 +21,7 @@ class Game:
         mode: GameMode,
         player1_name: str,
         secret_number: str,
-        max_attempts: int = 10,
+        max_attempts: int = 2,
         player2_name: Optional[str] = None,
         secret_number_p2: Optional[str] = None,
     ):
@@ -94,17 +94,13 @@ class Game:
         if player == 1:
             self.player1_guesses.append({"guess": guess, "fijas": fijas, "picas": picas})
             self.player1_attempts_left -= 1
-            guesses_list = self.player1_guesses
             attempts_left = self.player1_attempts_left
             opponent = self.player2_name
-            secret_to_beat = self.secret_number_p2
         else:
             self.player2_guesses.append({"guess": guess, "fijas": fijas, "picas": picas})
             self.player2_attempts_left -= 1
-            guesses_list = self.player2_guesses
             attempts_left = self.player2_attempts_left
             opponent = self.player1_name
-            secret_to_beat = self.secret_number
 
         # Verificar si ganó (4 fijas)
         if fijas == 4:
@@ -120,27 +116,29 @@ class Game:
                 "current_turn": self.current_turn,
             }
 
-        # Verificar si perdió (sin intentos)
-        if attempts_left == 0:
+        # Empate: ambos jugadores agotaron intentos sin adivinar
+        if self.player1_attempts_left == 0 and self.player2_attempts_left == 0:
             self.status = GameStatus.FINISHED
-            other_player = 2 if player == 1 else 1
-            self.winner = self.player2_name if other_player == 2 else self.player1_name
+            self.winner = "Empate"
             self.finished_at = datetime.now()
             return {
-                "won": False,
-                "message": f"Agotaste tus {self.max_attempts} intentos. El número de {opponent} era {secret_to_beat}. {self.winner} gana.",
+                "won": "draw",
+                "message": "Empate: ambos jugadores agotaron sus intentos sin lograr 4 fijas.",
                 "fijas": fijas,
                 "picas": picas,
                 "attempts_left": attempts_left,
                 "current_turn": self.current_turn,
             }
 
-        # Cambiar de turno
-        self.current_turn = 2 if self.current_turn == 1 else 1
+        # Cambiar de turno respetando intentos disponibles
+        next_turn = 2 if self.current_turn == 1 else 1
+        next_attempts = self.player1_attempts_left if next_turn == 1 else self.player2_attempts_left
+        if next_attempts > 0:
+            self.current_turn = next_turn
 
         return {
             "won": None,
-            "message": f"Intento registrado. Te quedan {attempts_left} intentos. Ahora es turno del {opponent}.",
+            "message": f"Intento registrado. Te quedan {attempts_left} intentos.",
             "fijas": fijas,
             "picas": picas,
             "attempts_left": attempts_left,
