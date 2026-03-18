@@ -43,7 +43,7 @@ services:
       - webapp
   e2e:
     build: .
-    command: pytest e2e
+    command: pytest e2e --no-cov
     environment:
       DATABASE_URL: postgresql+psycopg2://postgres:postgres@db:5432/picasyfijas
     depends_on:
