@@ -36,8 +36,6 @@ services:
   unittests:
     build: .
     command: pytest
-    volumes:
-      - .:/app
     environment:
       DATABASE_URL: postgresql+psycopg2://postgres:postgres@db:5432/picasyfijas
     depends_on:
@@ -46,8 +44,6 @@ services:
   e2e:
     build: .
     command: pytest e2e
-    volumes:
-      - .:/app
     environment:
       DATABASE_URL: postgresql+psycopg2://postgres:postgres@db:5432/picasyfijas
     depends_on:
