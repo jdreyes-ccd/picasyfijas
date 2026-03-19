@@ -10,9 +10,10 @@ app = FastAPI()
 template = Jinja2Templates(directory="app/templates")
 GAME_NOT_FOUND_DETAIL = "Juego no encontrado"
 JOIN_GAME_NOT_FOUND_DETAIL = "Juego no encontrado o ya en progreso"
+INVALID_REQUEST_DESCRIPTION = "Solicitud inválida"
 BAD_REQUEST_RESPONSE = {
     400: {
-        "description": "Solicitud inválida",
+        "description": INVALID_REQUEST_DESCRIPTION,
         "content": {"application/json": {"example": {"detail": "Descripción del error"}}},
     }
 }
@@ -24,7 +25,7 @@ NOT_FOUND_RESPONSE = {
 }
 JOIN_GAME_RESPONSE = {
     400: {
-        "description": "Solicitud inválida",
+        "description": INVALID_REQUEST_DESCRIPTION,
         "content": {"application/json": {"example": {"detail": "Descripción del error"}}},
     },
     404: {
@@ -34,7 +35,7 @@ JOIN_GAME_RESPONSE = {
 }
 GUESS_RESPONSE = {
     400: {
-        "description": "Solicitud inválida",
+        "description": INVALID_REQUEST_DESCRIPTION,
         "content": {"application/json": {"example": {"detail": "Descripción del error"}}},
     },
     404: {
