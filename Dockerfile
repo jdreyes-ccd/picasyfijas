@@ -3,8 +3,7 @@ FROM python:3.11-slim
 WORKDIR /app
 
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
-RUN playwright install --with-deps
+RUN pip install --no-cache-dir -r requirements.txt && playwright install --with-deps
 
 # Copy only required project files to reduce attack surface and avoid leaking local artifacts.
 COPY app/ ./app/
