@@ -9,6 +9,7 @@ from src.game_functions import calculate_fijas_picas, validate_number as validat
 app = FastAPI()
 template = Jinja2Templates(directory="app/templates")
 GAME_NOT_FOUND_DETAIL = "Juego no encontrado"
+JOIN_GAME_NOT_FOUND_DETAIL = "Juego no encontrado o ya en progreso"
 BAD_REQUEST_RESPONSE = {
     400: {
         "description": "Solicitud inválida",
@@ -20,6 +21,26 @@ NOT_FOUND_RESPONSE = {
         "description": "Recurso no encontrado",
         "content": {"application/json": {"example": {"detail": GAME_NOT_FOUND_DETAIL}}},
     }
+}
+JOIN_GAME_RESPONSE = {
+    400: {
+        "description": "Solicitud inválida",
+        "content": {"application/json": {"example": {"detail": "Descripción del error"}}},
+    },
+    404: {
+        "description": "Juego no encontrado o ya en progreso",
+        "content": {"application/json": {"example": {"detail": JOIN_GAME_NOT_FOUND_DETAIL}}},
+    },
+}
+GUESS_RESPONSE = {
+    400: {
+        "description": "Solicitud inválida",
+        "content": {"application/json": {"example": {"detail": "Descripción del error"}}},
+    },
+    404: {
+        "description": "Recurso no encontrado",
+        "content": {"application/json": {"example": {"detail": GAME_NOT_FOUND_DETAIL}}},
+    },
 }
 
 
@@ -88,7 +109,7 @@ def create_multiplayer_game(player: PlayerName):
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@app.post("/play/multiplayer/join/{game_id}", responses={**BAD_REQUEST_RESPONSE, **NOT_FOUND_RESPONSE})
+@app.post("/play/multiplayer/join/{game_id}", responses=JOIN_GAME_RESPONSE)
 def join_multiplayer_game(game_id: str, player: PlayerName):
     """
     Une a un segundo jugador a un juego existente.
@@ -99,7 +120,7 @@ def join_multiplayer_game(game_id: str, player: PlayerName):
     try:
         game = game_manager.join_multiplayer_game(player.name, game_id)
         if not game:
-            raise HTTPException(status_code=404, detail="Juego no encontrado o ya en progreso")
+            raise HTTPException(status_code=404, detail=JOIN_GAME_NOT_FOUND_DETAIL)
         
         return {
             "game_id": game.game_id,
@@ -114,7 +135,7 @@ def join_multiplayer_game(game_id: str, player: PlayerName):
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@app.post("/guess/{game_id}", responses={**BAD_REQUEST_RESPONSE, **NOT_FOUND_RESPONSE})
+@app.post("/guess/{game_id}", responses=GUESS_RESPONSE)
 def submit_guess(game_id: str, guess_data: GuessRequest):
     """
     Procesa un intento del jugador.
@@ -180,7 +201,7 @@ def submit_guess(game_id: str, guess_data: GuessRequest):
         raise HTTPException(status_code=400, detail="Para multijugador usa /guess/{game_id}/player/{player_number}")
 
 
-@app.post("/guess/{game_id}/player/{player_number}", responses={**BAD_REQUEST_RESPONSE, **NOT_FOUND_RESPONSE})
+@app.post("/guess/{game_id}/player/{player_number}", responses=GUESS_RESPONSE)
 def submit_guess_multiplayer(game_id: str, player_number: int, guess_data: GuessRequest):
     """
     Procesa un intento en modo MULTIJUGADOR con TURNOS.
