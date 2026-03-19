@@ -9,7 +9,7 @@ services:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-picasyfijas}"]
       interval: 5s
       timeout: 5s
-      retries: 3
+      retries: 1
     ports:
       - "5432:5432"
     volumes:
@@ -42,7 +42,7 @@ services:
       retries: 5
   unittests:
     build: .
-    command: pytest
+    command: pytest tests --cov=app --cov=src --cov-report=term-missing --cov-report=html --cov-report=xml
     environment:
       DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-picasyfijas}
     depends_on:
