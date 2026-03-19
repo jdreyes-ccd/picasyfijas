@@ -1,12 +1,17 @@
-import random
+import secrets
 
 
 def generate_random_number():
     """Genera un número aleatorio de 4 dígitos sin dígitos repetidos."""
-    while True:
-        number = str(random.randint(1000, 9999))
-        if len(set(number)) == 4:  # Todos los dígitos deben ser diferentes
-            return number
+    first_digit = secrets.choice("123456789")
+    available_digits = [digit for digit in "0123456789" if digit != first_digit]
+
+    remaining_digits = []
+    for _ in range(3):
+        index = secrets.randbelow(len(available_digits))
+        remaining_digits.append(available_digits.pop(index))
+
+    return first_digit + "".join(remaining_digits)
 
 
 def validate_number(number):
