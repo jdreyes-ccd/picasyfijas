@@ -9,6 +9,12 @@ from src.game_functions import calculate_fijas_picas, validate_number as validat
 app = FastAPI()
 template = Jinja2Templates(directory="app/templates")
 GAME_NOT_FOUND_DETAIL = "Juego no encontrado"
+BAD_REQUEST_RESPONSE = {
+    400: {
+        "description": "Solicitud inválida",
+        "content": {"application/json": {"example": {"detail": "Descripción del error"}}},
+    }
+}
 
 
 # Modelos de request
@@ -32,7 +38,7 @@ def validate_number_endpoint(number: str):
 
 # ==================== ENDPOINTS DE JUEGO ====================
 
-@app.post("/play/solo")
+@app.post("/play/solo", responses=BAD_REQUEST_RESPONSE)
 def create_solo_game(player: PlayerName):
     """
     Crea un nuevo juego solo contra la máquina.
@@ -55,7 +61,7 @@ def create_solo_game(player: PlayerName):
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@app.post("/play/multiplayer")
+@app.post("/play/multiplayer", responses=BAD_REQUEST_RESPONSE)
 def create_multiplayer_game(player: PlayerName):
     """
     Crea un nuevo juego multijugador.
@@ -76,7 +82,7 @@ def create_multiplayer_game(player: PlayerName):
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@app.post("/play/multiplayer/join/{game_id}")
+@app.post("/play/multiplayer/join/{game_id}", responses=BAD_REQUEST_RESPONSE)
 def join_multiplayer_game(game_id: str, player: PlayerName):
     """
     Une a un segundo jugador a un juego existente.
@@ -102,7 +108,7 @@ def join_multiplayer_game(game_id: str, player: PlayerName):
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@app.post("/guess/{game_id}")
+@app.post("/guess/{game_id}", responses=BAD_REQUEST_RESPONSE)
 def submit_guess(game_id: str, guess_data: GuessRequest):
     """
     Procesa un intento del jugador.
@@ -168,7 +174,7 @@ def submit_guess(game_id: str, guess_data: GuessRequest):
         raise HTTPException(status_code=400, detail="Para multijugador usa /guess/{game_id}/player/{player_number}")
 
 
-@app.post("/guess/{game_id}/player/{player_number}")
+@app.post("/guess/{game_id}/player/{player_number}", responses=BAD_REQUEST_RESPONSE)
 def submit_guess_multiplayer(game_id: str, player_number: int, guess_data: GuessRequest):
     """
     Procesa un intento en modo MULTIJUGADOR con TURNOS.
