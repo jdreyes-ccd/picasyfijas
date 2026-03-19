@@ -105,11 +105,13 @@ class GameManager:
         game.secret_number_p2 = generate_random_number()
         game.status = GameStatus.IN_PROGRESS
         
-        # Remover del pool de jugadores esperando
-        for player, gid in list(self.waiting_players.items()):
-            if gid == game_id:
-                del self.waiting_players[player]
-                break                            
+        # Remover del pool de jugadores esperando sin copiar el diccionario.
+        player_to_remove = next(
+            (player for player, gid in self.waiting_players.items() if gid == game_id),
+            None,
+        )
+        if player_to_remove is not None:
+            del self.waiting_players[player_to_remove]
 
     
         self.games[game.game_id] = game
