@@ -14,6 +14,7 @@ def test_bdd_create_solo_game():
 @scenario("features/solo_service.feature", "Reject invalid guess in solo game")
 def test_bdd_reject_invalid_solo_guess():
     pass
+    
 
 
 @scenario("features/solo_service.feature", "Get solo game status")
