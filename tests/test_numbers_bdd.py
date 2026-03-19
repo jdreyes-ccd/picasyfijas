@@ -3,7 +3,7 @@ from pytest_bdd import scenario, given, when, then, parsers
 from fastapi.testclient import TestClient
 from app.main import app 
 
-@scenario('features/valid.feature', 'Validate a valid number')
+@scenario('features/valid.feature', 'Validate number format rules')
 def test_validate_number():
     pass
 

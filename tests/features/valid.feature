@@ -1,8 +1,9 @@
-Feature: Number validation API 
-    Scenario: Validate a valid number
+Feature: Number validation API
+    Scenario Outline: Validate number format rules
         Given I have a number <number>
         When I validate the number
         Then the result should be <result>
+
         Examples:
             | number | result |
             | 1234   | true   |
