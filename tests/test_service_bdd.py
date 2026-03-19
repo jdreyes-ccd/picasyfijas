@@ -8,33 +8,39 @@ from app.game_manager import game_manager
 
 @scenario("features/solo_service.feature", "Create a solo game")
 def test_bdd_create_solo_game():
-    pass
+    """Scenario wrapper required by pytest-bdd; step implementations are defined below."""
+    return None
 
 
 @scenario("features/solo_service.feature", "Reject invalid guess in solo game")
 def test_bdd_reject_invalid_solo_guess():
-    pass
+    """Scenario wrapper required by pytest-bdd; step implementations are defined below."""
+    return None
     
 
 
 @scenario("features/solo_service.feature", "Get solo game status")
 def test_bdd_get_solo_game_status():
-    pass
+    """Scenario wrapper required by pytest-bdd; step implementations are defined below."""
+    return None
 
 
 @scenario("features/multiplayer_service.feature", "Create multiplayer game in waiting state")
 def test_bdd_create_multiplayer_waiting():
-    pass
+    """Scenario wrapper required by pytest-bdd; step implementations are defined below."""
+    return None
 
 
 @scenario("features/multiplayer_service.feature", "Join multiplayer game")
 def test_bdd_join_multiplayer_game():
-    pass
+    """Scenario wrapper required by pytest-bdd; step implementations are defined below."""
+    return None
 
 
 @scenario("features/multiplayer_service.feature", "Reject guess out of turn in multiplayer")
 def test_bdd_reject_guess_out_of_turn():
-    pass
+    """Scenario wrapper required by pytest-bdd; step implementations are defined below."""
+    return None
 
 
 @pytest.fixture

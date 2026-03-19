@@ -8,6 +8,7 @@ from src.game_functions import calculate_fijas_picas, validate_number as validat
 
 app = FastAPI()
 template = Jinja2Templates(directory="app/templates")
+GAME_NOT_FOUND_DETAIL = "Juego no encontrado"
 
 
 # Modelos de request
@@ -123,7 +124,7 @@ def submit_guess(game_id: str, guess_data: GuessRequest):
     # Obtener el juego
     game = game_manager.get_game(game_id)
     if not game:
-        raise HTTPException(status_code=404, detail="Juego no encontrado")
+        raise HTTPException(status_code=404, detail=GAME_NOT_FOUND_DETAIL)
     
     # Validar que el juego esté en progreso
     if game.status.value != "in_progress":
@@ -182,7 +183,7 @@ def submit_guess_multiplayer(game_id: str, player_number: int, guess_data: Guess
     
     game = game_manager.get_game(game_id)
     if not game:
-        raise HTTPException(status_code=404, detail="Juego no encontrado")
+        raise HTTPException(status_code=404, detail=GAME_NOT_FOUND_DETAIL)
     
     if game.status.value != "in_progress":
         raise HTTPException(status_code=400, detail=f"El juego ya ha terminado. Ganador: {game.winner}")
@@ -250,7 +251,7 @@ def get_game_status(game_id: str):
     """
     game = game_manager.get_game(game_id)
     if not game:
-        raise HTTPException(status_code=404, detail="Juego no encontrado")
+        raise HTTPException(status_code=404, detail=GAME_NOT_FOUND_DETAIL)
     
     game_dict = game.to_dict()
     # No revelar el número secreto

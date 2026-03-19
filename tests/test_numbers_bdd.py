@@ -5,7 +5,8 @@ from app.main import app
 
 @scenario('features/valid.feature', 'Validate number format rules')
 def test_validate_number():
-    pass
+    """Scenario function required by pytest-bdd; steps are bound via decorators below."""
+    return None
 
 @pytest.fixture
 def client():
