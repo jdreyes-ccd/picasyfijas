@@ -9,7 +9,7 @@ services:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-picasyfijas}"]
       interval: 5s
       timeout: 5s
-      retries: 1
+      retries: 5
     ports:
       - "5432:5432"
     volumes:
@@ -36,10 +36,10 @@ services:
       db:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/validate/1234"]
-      interval: 50s
-      timeout: 20s
-      retries: 5
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/validate/1234', timeout=3)"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
   unittests:
     build: .
     command: pytest tests --cov=app --cov=src --cov-report=term-missing --cov-report=html --cov-report=xml
@@ -47,8 +47,6 @@ services:
       DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-picasyfijas}
     depends_on:
       db:
-        condition: service_healthy
-      webapp:
         condition: service_healthy
   e2e:
     build: .
