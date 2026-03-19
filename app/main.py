@@ -12,10 +12,11 @@ GAME_NOT_FOUND_DETAIL = "Juego no encontrado"
 JOIN_GAME_NOT_FOUND_DETAIL = "Juego no encontrado o ya en progreso"
 INVALID_REQUEST_DESCRIPTION = "Solicitud inválida"
 APPLICATION_JSON = "application/json"
+ERROR_DETAIL_DESCRIPTION = "Descripción del error"
 BAD_REQUEST_RESPONSE = {
     400: {
         "description": INVALID_REQUEST_DESCRIPTION,
-        "content": {APPLICATION_JSON: {"example": {"detail": "Descripción del error"}}},
+        "content": {APPLICATION_JSON: {"example": {"detail": ERROR_DETAIL_DESCRIPTION}}},
     }
 }
 NOT_FOUND_RESPONSE = {
@@ -27,7 +28,7 @@ NOT_FOUND_RESPONSE = {
 JOIN_GAME_RESPONSE = {
     400: {
         "description": INVALID_REQUEST_DESCRIPTION,
-        "content": {APPLICATION_JSON: {"example": {"detail": "Descripción del error"}}},
+        "content": {APPLICATION_JSON: {"example": {"detail": ERROR_DETAIL_DESCRIPTION}}},
     },
     404: {
         "description": "Juego no encontrado o ya en progreso",
@@ -37,7 +38,7 @@ JOIN_GAME_RESPONSE = {
 GUESS_RESPONSE = {
     400: {
         "description": INVALID_REQUEST_DESCRIPTION,
-        "content": {APPLICATION_JSON: {"example": {"detail": "Descripción del error"}}},
+        "content": {APPLICATION_JSON: {"example": {"detail": ERROR_DETAIL_DESCRIPTION}}},
     },
     404: {
         "description": "Recurso no encontrado",
