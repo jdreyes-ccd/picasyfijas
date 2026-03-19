@@ -47,3 +47,8 @@ jobs:
             -Dsonar.projectKey=${{ secrets.SONAR_PROJECT_KEY }}
             -Dsonar.organization=${{ secrets.SONAR_ORGANIZATION }}
             -Dsonar.python.version=3.11
+            -Dsonar.sources=app,src
+            -Dsonar.tests=tests,e2e
+            -Dsonar.test.inclusions=tests/**,e2e/**
+            -Dsonar.exclusions=**/__pycache__/**,**/.pytest_cache/**,htmlcov/**
+            -Dsonar.python.coverage.reportPaths=coverage.xml
