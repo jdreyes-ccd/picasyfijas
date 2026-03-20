@@ -8,6 +8,7 @@ from src.game_functions import calculate_fijas_picas, validate_number as validat
 
 app = FastAPI()
 template = Jinja2Templates(directory="app/templates")
+INDEX_TEMPLATE = "index.html"
 GAME_NOT_FOUND_DETAIL = "Juego no encontrado"
 JOIN_GAME_NOT_FOUND_DETAIL = "Juego no encontrado o ya en progreso"
 INVALID_REQUEST_DESCRIPTION = "Solicitud inválida"
@@ -63,31 +64,31 @@ class LeaveGameRequest(BaseModel):
 
 @app.get("/", response_class=HTMLResponse)
 def read_root(request: Request):
-    return template.TemplateResponse("index.html", {"request": request})
+    return template.TemplateResponse(INDEX_TEMPLATE, {"request": request})
 
 
 @app.get("/play/solo", response_class=HTMLResponse)
 def read_solo_route(request: Request):
     """Sirve la SPA en la ruta visible de juego solo."""
-    return template.TemplateResponse("index.html", {"request": request})
+    return template.TemplateResponse(INDEX_TEMPLATE, {"request": request})
 
 
 @app.get("/play/solo/{game_id}", response_class=HTMLResponse)
 def read_solo_game_route(request: Request, game_id: str):
     """Sirve la SPA para una partida solo específica."""
-    return template.TemplateResponse("index.html", {"request": request})
+    return template.TemplateResponse(INDEX_TEMPLATE, {"request": request})
 
 
 @app.get("/play/multiplayer", response_class=HTMLResponse)
 def read_multiplayer_route(request: Request):
     """Sirve la SPA en la ruta visible de multijugador."""
-    return template.TemplateResponse("index.html", {"request": request})
+    return template.TemplateResponse(INDEX_TEMPLATE, {"request": request})
 
 
 @app.get("/play/multiplayer/{game_id}", response_class=HTMLResponse)
 def read_multiplayer_game_route(request: Request, game_id: str):
     """Sirve la SPA para una partida multijugador específica."""
-    return template.TemplateResponse("index.html", {"request": request})
+    return template.TemplateResponse(INDEX_TEMPLATE, {"request": request})
 
 
 @app.get("/validate/{number}")
