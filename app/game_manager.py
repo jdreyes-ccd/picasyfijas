@@ -83,7 +83,7 @@ class GameManager:
             mode=GameMode.MULTIPLAYER,
             player1_name=player1_name,
             secret_number=secret_number,
-            max_attempts=2,
+            max_attempts=10,
         )
         self.games[game.game_id] = game
         self.waiting_players[player1_name] = game.game_id
