@@ -420,6 +420,15 @@
             document.getElementById(screenId).classList.add('active');
         }
 
+        function setRoute(path, replace = false) {
+            if (window.location.pathname === path) return;
+            if (replace) {
+                window.history.replaceState({}, '', path);
+            } else {
+                window.history.pushState({}, '', path);
+            }
+        }
+
         function showMenu() {
             if (gameState.pollingInterval) clearInterval(gameState.pollingInterval);
             if (gameState.gamePollingInterval) clearInterval(gameState.gamePollingInterval);
@@ -438,6 +447,7 @@
                 player2Name: null
             };
             localStorage.removeItem('gameState');
+            setRoute('/', true);
             showScreen('menuScreen');
         }
 
@@ -518,6 +528,11 @@
                 document.getElementById('modeDisplay').textContent = modoText;
                 
                 updateGameScreen();
+                if (state.mode === 'solo') {
+                    setRoute(`/play/solo/${state.gameId}`, true);
+                } else {
+                    setRoute(`/play/multiplayer/${state.gameId}`, true);
+                }
                 showScreen('gameScreen');
                 
                 // Reanudar polling si es multijugador
@@ -530,11 +545,30 @@
             }
         }
 
-        function showModeSelection() { showScreen('modeScreen'); }
+        function showModeSelection() {
+            setRoute('/');
+            showScreen('modeScreen');
+        }
         function showInstructions() { showScreen('instructionsScreen'); }
+
+        function handleInitialRoute() {
+            const path = window.location.pathname;
+            if (path.startsWith('/play/solo')) {
+                gameState.mode = 'solo';
+                showScreen('playerNameScreen');
+                return;
+            }
+            if (path.startsWith('/play/multiplayer')) {
+                gameState.mode = 'multiplayer';
+                showScreen('multiplayerScreen');
+                return;
+            }
+            showScreen('menuScreen');
+        }
 
         function selectMode(mode) {
             gameState.mode = mode;
+            setRoute(mode === 'solo' ? '/play/solo' : '/play/multiplayer');
             showScreen(mode === 'solo' ? 'playerNameScreen' : 'multiplayerScreen');
         }
 
@@ -565,6 +599,7 @@
                 document.getElementById('modeDisplay').textContent = 'Solo vs Máquina';
                 updateGameScreen();
                 saveGameState();
+                setRoute(`/play/solo/${gameState.gameId}`);
                 showScreen('gameScreen');
             } catch (error) {
                 alert('Error: ' + error.message);
@@ -826,6 +861,7 @@
                         document.getElementById('modeDisplay').textContent = 'Multijugador (Turnos)';
                         updateGameScreen();
                         saveGameState();
+                        setRoute(`/play/multiplayer/${gameState.gameId}`);
                         showScreen('gameScreen');
                         
                         // Iniciar polling de sincronización durante el juego
@@ -936,6 +972,7 @@
                 document.getElementById('modeDisplay').textContent = 'Multijugador (Turnos)';
                 updateGameScreen();
                 saveGameState();
+                setRoute(`/play/multiplayer/${gameState.gameId}`);
                 showScreen('gameScreen');
                 
                 // Iniciar polling de sincronización para el Jugador 2
@@ -948,12 +985,16 @@
         function cancelWaiting() {
             if (gameState.pollingInterval) clearInterval(gameState.pollingInterval);
             if (gameState.gamePollingInterval) clearInterval(gameState.gamePollingInterval);
+            setRoute('/play/multiplayer');
             selectMode('multiplayer');
         }
 
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', async function() {
             // Intentar restaurar sesión anterior
-            restoreGameSession();
+            await restoreGameSession();
+            if (!gameState.gameId) {
+                handleInitialRoute();
+            }
             
             document.getElementById('playerName').addEventListener('keypress', function(e) {
                 if (e.key === 'Enter') startSoloGame();
