@@ -56,6 +56,11 @@ class GuessRequest(BaseModel):
     guess: str
 
 
+class LeaveGameRequest(BaseModel):
+    player_number: int | None = None
+    player_name: str | None = None
+
+
 @app.get("/", response_class=HTMLResponse)
 def read_root(request: Request):
     return template.TemplateResponse("index.html", {"request": request})
@@ -304,3 +309,19 @@ def get_waiting_games():
         - Lista de juegos en estado WAITING
     """
     return {"waiting_games": game_manager.get_waiting_games()}
+
+
+@app.post("/game/{game_id}/leave", responses=NOT_FOUND_RESPONSE)
+def leave_game(game_id: str, leave_data: LeaveGameRequest):
+    """Permite abandonar una partida actual o cancelar una en espera."""
+    try:
+        result = game_manager.leave_game(
+            game_id,
+            player_number=leave_data.player_number,
+            player_name=leave_data.player_name,
+        )
+        if not result:
+            raise HTTPException(status_code=404, detail=GAME_NOT_FOUND_DETAIL)
+        return result
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))

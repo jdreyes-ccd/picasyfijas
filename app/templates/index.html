@@ -310,6 +310,7 @@
 
             <div class="button-group">
                 <button class="btn-primary" id="submitButton" onclick="submitGuess()">VALIDAR INTENTO</button>
+                <button class="btn-secondary" onclick="leaveCurrentGame()">SALIR DE LA PARTIDA</button>
             </div>
 
             <div id="errorMessage" class="error-message" style="display: none;"></div>
@@ -693,6 +694,38 @@
             } catch (error) {
                 errorMessage.textContent = error.message;
                 errorMessage.style.display = 'block';
+            }
+        }
+
+        async function leaveCurrentGame() {
+            if (!gameState.gameId) {
+                showMenu();
+                return;
+            }
+
+            const confirmLeave = confirm('¿Seguro que quieres salir de la partida actual?');
+            if (!confirmLeave) return;
+
+            try {
+                const payload = {
+                    player_name: gameState.playerName,
+                    player_number: gameState.mode === 'multiplayer' ? gameState.playerNumber : null
+                };
+
+                const response = await fetch(`/game/${gameState.gameId}/leave`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.detail || 'No se pudo abandonar la partida');
+                }
+
+                showMenu();
+            } catch (error) {
+                alert('Error: ' + error.message);
             }
         }
 

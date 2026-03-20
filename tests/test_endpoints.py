@@ -166,6 +166,45 @@ class TestGameStatus:
         assert response.status_code == 404
 
 
+class TestLeaveGame:
+    def test_leave_solo_game(self, client):
+        """Prueba abandonar una partida en modo solo."""
+        response = client.post("/play/solo", json={"name": "Juan"})
+        game_id = response.json()["game_id"]
+
+        leave_response = client.post(
+            f"/game/{game_id}/leave",
+            json={"player_name": "Juan"}
+        )
+        assert leave_response.status_code == 200
+        data = leave_response.json()
+        assert data["status"] == "finished"
+        assert data["winner"] == "Máquina"
+
+        game_status = client.get(f"/game/{game_id}")
+        assert game_status.status_code == 200
+        assert game_status.json()["status"] == "finished"
+
+    def test_leave_multiplayer_game(self, client):
+        """Prueba abandonar una partida en modo multijugador en progreso."""
+        response = client.post("/play/multiplayer", json={"name": "Alice"})
+        game_id = response.json()["game_id"]
+
+        client.post(
+            f"/play/multiplayer/join/{game_id}",
+            json={"name": "Bob"}
+        )
+
+        leave_response = client.post(
+            f"/game/{game_id}/leave",
+            json={"player_number": 1, "player_name": "Alice"}
+        )
+        assert leave_response.status_code == 200
+        data = leave_response.json()
+        assert data["status"] == "finished"
+        assert data["winner"] == "Bob"
+
+
 class TestGameFlow:
     def test_complete_solo_game_flow(self, client):
         """Prueba flujo completo de un juego solo."""

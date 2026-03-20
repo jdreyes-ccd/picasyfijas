@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Optional, Dict
 from app.models import Game, GameMode, GameStatus
 from src.game_functions import generate_random_number
@@ -89,6 +90,15 @@ class GameManager:
         self._upsert_game(game)
         return game
 
+    def _remove_waiting_player_by_game_id(self, game_id: str) -> None:
+        """Elimina del pool al jugador asociado a un game_id en espera."""
+        player_to_remove = next(
+            (player for player, gid in self.waiting_players.items() if gid == game_id),
+            None,
+        )
+        if player_to_remove is not None:
+            del self.waiting_players[player_to_remove]
+
     def join_multiplayer_game(self, player2_name: str, game_id: str) -> Optional[Game]:
         """Une un segundo jugador a un juego existente."""
         game = self.get_game(game_id)
@@ -106,18 +116,70 @@ class GameManager:
         game.status = GameStatus.IN_PROGRESS
         
         # Remover del pool de jugadores esperando sin copiar el diccionario.
-        player_to_remove = next(
-            (player for player, gid in self.waiting_players.items() if gid == game_id),
-            None,
-        )
-        if player_to_remove is not None:
-            del self.waiting_players[player_to_remove]
+        self._remove_waiting_player_by_game_id(game_id)
 
     
         self.games[game.game_id] = game
         self._upsert_game(game)
 
         return game
+
+    def leave_game(
+        self,
+        game_id: str,
+        player_number: Optional[int] = None,
+        player_name: Optional[str] = None,
+    ) -> Optional[dict]:
+        """Permite abandonar una partida en curso o cancelar una en espera."""
+        game = self.get_game(game_id)
+        if not game:
+            return None
+
+        if game.mode == GameMode.SOLO:
+            if game.status != GameStatus.FINISHED:
+                game.status = GameStatus.FINISHED
+                game.winner = "Máquina"
+                game.finished_at = datetime.now()
+                self.save_game(game)
+
+            return {
+                "game_id": game.game_id,
+                "status": game.status.value,
+                "winner": game.winner,
+                "message": "Partida abandonada. La máquina gana por retiro.",
+            }
+
+        # Modo multijugador
+        if game.status == GameStatus.WAITING:
+            quitter = player_name or game.player1_name
+            self._remove_waiting_player_by_game_id(game_id)
+            self.delete_game(game_id)
+            return {
+                "game_id": game_id,
+                "status": "cancelled",
+                "winner": None,
+                "message": f"{quitter} canceló la partida antes de iniciar.",
+            }
+
+        if player_number not in (1, 2):
+            raise ValueError("player_number debe ser 1 o 2 para abandonar en multijugador")
+
+        quitter_name = game.player1_name if player_number == 1 else game.player2_name
+        winner_name = game.player2_name if player_number == 1 else game.player1_name
+        winner_name = winner_name or "Partida cancelada"
+
+        if game.status != GameStatus.FINISHED:
+            game.status = GameStatus.FINISHED
+            game.winner = winner_name
+            game.finished_at = datetime.now()
+            self.save_game(game)
+
+        return {
+            "game_id": game.game_id,
+            "status": game.status.value,
+            "winner": game.winner,
+            "message": f"{quitter_name} abandonó la partida. {winner_name} gana por retiro.",
+        }
 
 
     def get_game(self, game_id: str) -> Optional[Game]:
