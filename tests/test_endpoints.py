@@ -2,6 +2,7 @@ import pytest
 from fastapi.testclient import TestClient
 from app.main import app
 from app.game_manager import game_manager
+import app.main as main_module
 
 
 @pytest.fixture
@@ -17,6 +18,16 @@ def clear_games():
 
 
 class TestSoloGame:
+    @pytest.mark.parametrize(
+        "route",
+        ["/", "/play/solo", "/play/solo/test-id", "/play/multiplayer", "/play/multiplayer/test-id"],
+    )
+    def test_html_routes_render_index(self, client, route):
+        """Prueba que las rutas visibles de la SPA respondan con HTML."""
+        response = client.get(route)
+        assert response.status_code == 200
+        assert "text/html" in response.headers["content-type"]
+
     def test_create_solo_game(self, client):
         """Prueba crear un juego solo."""
         response = client.post(
@@ -63,6 +74,16 @@ class TestSoloGame:
             json={"guess": "123"}
         )
         assert response.status_code == 400
+
+    def test_create_solo_game_returns_400_on_manager_error(self, client, monkeypatch):
+        """Prueba rama de error del endpoint de creación en modo solo."""
+        def _raise_error(_name):
+            raise RuntimeError("error de prueba")
+
+        monkeypatch.setattr(main_module.game_manager, "create_solo_game", _raise_error)
+        response = client.post("/play/solo", json={"name": "Juan"})
+        assert response.status_code == 400
+        assert "error de prueba" in response.json()["detail"]
 
     def test_solo_game_lose_after_10_attempts(self, client):
         """Prueba perder tras 10 intentos fallidos."""
@@ -146,6 +167,26 @@ class TestMultiplayerGame:
         assert response.status_code == 200
         data = response.json()
         assert len(data["waiting_games"]) == 2
+
+    def test_create_multiplayer_game_returns_400_on_manager_error(self, client, monkeypatch):
+        """Prueba rama de error del endpoint de creación multijugador."""
+        def _raise_error(_name):
+            raise RuntimeError("error multiplayer")
+
+        monkeypatch.setattr(main_module.game_manager, "create_multiplayer_game", _raise_error)
+        response = client.post("/play/multiplayer", json={"name": "Alice"})
+        assert response.status_code == 400
+        assert "error multiplayer" in response.json()["detail"]
+
+    def test_join_multiplayer_game_returns_400_on_unexpected_error(self, client, monkeypatch):
+        """Prueba rama de error inesperado en join multijugador."""
+        def _raise_error(_player_name, _game_id):
+            raise RuntimeError("join error")
+
+        monkeypatch.setattr(main_module.game_manager, "join_multiplayer_game", _raise_error)
+        response = client.post("/play/multiplayer/join/abc", json={"name": "Bob"})
+        assert response.status_code == 400
+        assert "join error" in response.json()["detail"]
 
 
 class TestGameStatus:
@@ -301,9 +342,63 @@ class TestGameFlow:
         assert response.status_code == 400
         assert "No es tu turno" in response.json()["detail"]
 
+    def test_guess_single_endpoint_rejects_multiplayer_mode(self, client):
+        """Prueba que /guess/{game_id} rechaza multijugador."""
+        response = client.post("/play/multiplayer", json={"name": "Alice"})
+        game_id = response.json()["game_id"]
+        client.post(f"/play/multiplayer/join/{game_id}", json={"name": "Bob"})
+
+        response = client.post(f"/guess/{game_id}", json={"guess": "1234"})
+        assert response.status_code == 400
+        assert "Para multijugador usa" in response.json()["detail"]
+
+    def test_guess_single_endpoint_rejects_finished_game(self, client):
+        """Prueba que no se aceptan intentos cuando el juego ya terminó."""
+        response = client.post("/play/solo", json={"name": "Juan"})
+        game_id = response.json()["game_id"]
+        client.post(f"/game/{game_id}/leave", json={"player_name": "Juan"})
+
+        response = client.post(f"/guess/{game_id}", json={"guess": "1234"})
+        assert response.status_code == 400
+        assert "El juego ya ha terminado" in response.json()["detail"]
+
+    def test_multiplayer_guess_invalid_player_number(self, client):
+        """Prueba validación de player_number fuera de rango."""
+        response = client.post("/play/multiplayer", json={"name": "Alice"})
+        game_id = response.json()["game_id"]
+        client.post(f"/play/multiplayer/join/{game_id}", json={"name": "Bob"})
+
+        response = client.post(f"/guess/{game_id}/player/3", json={"guess": "1234"})
+        assert response.status_code == 400
+        assert "player_number debe ser 1 o 2" in response.json()["detail"]
+
+    def test_multiplayer_guess_invalid_input_returns_400(self, client):
+        """Prueba validación estricta de número inválido en multijugador."""
+        response = client.post("/play/multiplayer", json={"name": "Alice"})
+        game_id = response.json()["game_id"]
+        client.post(f"/play/multiplayer/join/{game_id}", json={"name": "Bob"})
+
+        response = client.post(f"/guess/{game_id}/player/1", json={"guess": "1111"})
+        assert response.status_code == 400
+        assert "Número inválido" in response.json()["detail"]
+
+    def test_multiplayer_guess_returns_400_when_calculation_fails(self, client, monkeypatch):
+        """Prueba rama de excepción durante cálculo de fijas y picas."""
+        response = client.post("/play/multiplayer", json={"name": "Alice"})
+        game_id = response.json()["game_id"]
+        client.post(f"/play/multiplayer/join/{game_id}", json={"name": "Bob"})
+
+        def _raise_error(_secret, _guess):
+            raise RuntimeError("fallo cálculo")
+
+        monkeypatch.setattr(main_module, "calculate_fijas_picas", _raise_error)
+        response = client.post(f"/guess/{game_id}/player/1", json={"guess": "1234"})
+        assert response.status_code == 400
+        assert "fallo cálculo" in response.json()["detail"]
+
     def test_multiplayer_draw(self, client):
         """Prueba que el juego termina en empate cuando ambos agotan intentos."""
-        # Crear juego con 2 intentos (como está configurado)
+        # Crear juego multijugador
         response = client.post("/play/multiplayer", json={"name": "Alice"})
         game_id = response.json()["game_id"]
 
@@ -316,42 +411,43 @@ class TestGameFlow:
         game = game_manager.get_game(game_id)
         secret_p1 = game.secret_number
         secret_p2 = game.secret_number_p2
+        max_attempts = game.max_attempts
 
-        # Alternar turnos: cada jugador falla 2 veces
-        # Primero Jugador 1
-        wrong1 = "1234" if "1234" != secret_p2 else "5678"
-        response = client.post(
-            f"/guess/{game_id}/player/1",
-            json={"guess": wrong1}
-        )
-        assert response.status_code == 200
-        
-        # Luego Jugador 2
-        wrong2 = "1234" if "1234" != secret_p1 else "5678"
-        response = client.post(
-            f"/guess/{game_id}/player/2",
-            json={"guess": wrong2}
-        )
-        assert response.status_code == 200
-        
-        # Segundo intento Jugador 1
-        wrong1_2 = "5678" if "5678" != secret_p2 else "9012"
-        response = client.post(
-            f"/guess/{game_id}/player/1",
-            json={"guess": wrong1_2}
-        )
-        assert response.status_code == 200
-        
-        # Segundo intento Jugador 2 - último intento, debe terminar en draw
-        wrong2_2 = "5678" if "5678" != secret_p1 else "9012"
-        response = client.post(
-            f"/guess/{game_id}/player/2",
-            json={"guess": wrong2_2}
-        )
-        assert response.status_code == 200
-        data = response.json()
-        assert data["won"] == "draw"
-        assert "Empate" in data["message"]
+        def pick_wrong_guess(secret: str, used_guesses: list[str]) -> str:
+            candidates = ["1234", "5678", "9012", "3456", "7890", "2468", "1357"]
+            for candidate in candidates:
+                if candidate != secret and candidate not in used_guesses:
+                    return candidate
+            # Fallback válido (4 dígitos únicos) para evitar colisiones improbables.
+            return "1023" if secret != "1023" else "1203"
+
+        p1_guesses: list[str] = []
+        p2_guesses: list[str] = []
+
+        # Alternar turnos hasta agotar todos los intentos de ambos jugadores.
+        for round_index in range(max_attempts):
+            wrong1 = pick_wrong_guess(secret_p2, p1_guesses)
+            p1_guesses.append(wrong1)
+            response = client.post(
+                f"/guess/{game_id}/player/1",
+                json={"guess": wrong1}
+            )
+            assert response.status_code == 200
+
+            wrong2 = pick_wrong_guess(secret_p1, p2_guesses)
+            p2_guesses.append(wrong2)
+            response = client.post(
+                f"/guess/{game_id}/player/2",
+                json={"guess": wrong2}
+            )
+            assert response.status_code == 200
+            data = response.json()
+
+            if round_index < max_attempts - 1:
+                assert data["won"] is None
+            else:
+                assert data["won"] == "draw"
+                assert "Empate" in data["message"]
 
     def test_solo_game_persistence(self, client):
         """Prueba que los datos se persisten en PostgreSQL."""
@@ -373,3 +469,36 @@ class TestGameFlow:
         data = response.json()
         assert data["game_id"] == game_id
         assert len(data["guesses"]) == 1  # El intento está persistido
+
+
+class TestLeaveGameEdgeCases:
+    def test_leave_nonexistent_game_returns_404(self, client):
+        """Prueba que abandonar un juego inexistente retorna 404."""
+        response = client.post(
+            "/game/nonexistent/leave",
+            json={"player_name": "Juan", "player_number": 1},
+        )
+        assert response.status_code == 404
+
+    def test_leave_multiplayer_without_player_number_returns_400(self, client):
+        """Prueba que en multijugador en progreso se exige player_number válido."""
+        response = client.post("/play/multiplayer", json={"name": "Alice"})
+        game_id = response.json()["game_id"]
+        client.post(f"/play/multiplayer/join/{game_id}", json={"name": "Bob"})
+
+        response = client.post(f"/game/{game_id}/leave", json={"player_name": "Alice"})
+        assert response.status_code == 400
+        assert "player_number debe ser 1 o 2" in response.json()["detail"]
+
+    def test_leave_waiting_multiplayer_cancels_game(self, client):
+        """Prueba cancelación de una partida waiting por retiro del host."""
+        response = client.post("/play/multiplayer", json={"name": "Alice"})
+        game_id = response.json()["game_id"]
+
+        leave_response = client.post(f"/game/{game_id}/leave", json={"player_name": "Alice"})
+        assert leave_response.status_code == 200
+        data = leave_response.json()
+        assert data["status"] == "cancelled"
+
+        game_status = client.get(f"/game/{game_id}")
+        assert game_status.status_code == 404

@@ -21,7 +21,7 @@ def test_unique_digits():
     assert validate_number("1233") == False
 
 
-# Tests para validate_number mejorada (src/game_functions.py - lanza excepciones)
+# Tests para validate_number mejorada
 def test_validate_number_strict_valid():
     assert validate_strict("1234") == True
     assert validate_strict("5678") == True
@@ -37,6 +37,11 @@ def test_validate_number_strict_invalid_length():
 def test_validate_number_strict_invalid_chars():
     with pytest.raises(ValueError, match="numero"):
         validate_strict("12a3")
+
+
+def test_validate_number_strict_invalid_type():
+    with pytest.raises(ValueError, match="cadena"):
+        validate_strict(1234)
 
 
 def test_validate_number_strict_repeated_digits():
