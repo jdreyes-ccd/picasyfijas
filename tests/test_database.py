@@ -13,7 +13,7 @@ def test_init_db_retries_and_raises_after_max_attempts(monkeypatch):
 
     def always_fail(**_kwargs):
         calls["count"] += 1
-        raise OperationalError("stmt", {}, Exception("db down"))
+        raise OperationalError("stmt", {}, ConnectionError("db down"))
 
     monkeypatch.setattr(database.Base.metadata, "create_all", always_fail)
     monkeypatch.setattr(database.time, "sleep", lambda _seconds: None)
@@ -34,7 +34,7 @@ def test_init_db_succeeds_after_retry(monkeypatch):
     def fail_once_then_succeed(**_kwargs):
         calls["count"] += 1
         if calls["count"] == 1:
-            raise OperationalError("stmt", {}, Exception("transient"))
+            raise OperationalError("stmt", {}, ConnectionError("transient"))
         return None
 
     monkeypatch.setattr(database.Base.metadata, "create_all", fail_once_then_succeed)
