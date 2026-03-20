@@ -421,11 +421,11 @@
         }
 
         function setRoute(path, replace = false) {
-            if (window.location.pathname === path) return;
+            if (globalThis.location.pathname === path) return;
             if (replace) {
-                window.history.replaceState({}, '', path);
+                globalThis.history.replaceState({}, '', path);
             } else {
-                window.history.pushState({}, '', path);
+                globalThis.history.pushState({}, '', path);
             }
         }
 
@@ -552,7 +552,7 @@
         function showInstructions() { showScreen('instructionsScreen'); }
 
         function handleInitialRoute() {
-            const path = window.location.pathname;
+            const path = globalThis.location.pathname;
             if (path.startsWith('/play/solo')) {
                 gameState.mode = 'solo';
                 showScreen('playerNameScreen');
