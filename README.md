@@ -1,5 +1,10 @@
 # Picas y Fijas - Juego de Adivinanza
 
+## Integrantes:
+Juan Diego Reyes Martinez - Codigo: 161004329
+Diego Andres Chavez - Código: 1006820738
+
+
 Un juego interactivo donde los jugadores intentan adivinar un número secreto de 4 cifras con dígitos diferentes. El juego soporta tanto modo individual como multijugador.
 
 ## Historias de Usuario y Criterios de Aceptación
@@ -68,29 +73,6 @@ Un juego interactivo donde los jugadores intentan adivinar un número secreto de
 - Los intentos anteriores deben ser visibles para referencia
 - Las instrucciones del juego deben ser accesibles
 
-#### **Historia de Usuario 5: Reiniciar Juego**
-**Como** jugador  
-**Quiero** poder empezar un nuevo juego  
-**Para** seguir jugando sin tener que recargar la aplicación
 
-**Criterios de Aceptación:**
-- Debe haber una opción clara para reiniciar el juego
-- Al reiniciar, se debe generar un nuevo número secreto
-- El contador de intentos debe reiniciarse
-- En modo multijugador, ambos jugadores deben poder establecer nuevos números secretos
 
----
-
-### Métricas y Seguimiento
-
-#### **Historia de Usuario 6: Historial de Partidas**
-**Como** jugador  
-**Quiero** ver mis partidas anteriores  
-**Para** mejorar mi estrategia y ver mi progreso
-
-**Criterios de Aceptación:**
-- El sistema debe registrar el resultado de cada partida (ganada/perdida)
-- Debe mostrar el número de intentos utilizados
-- En modo individual, debe mostrar el tiempo total de la partida
-- El historial debe ser accesible desde el menú principal
 
