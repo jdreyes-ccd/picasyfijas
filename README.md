@@ -1,11 +1,10 @@
 # Picas y Fijas - Juego de Adivinanza
 
+Un juego interactivo donde los jugadores intentan adivinar un número secreto de 4 cifras con dígitos diferentes. El juego soporta tanto modo individual como multijugador.
+
 ## Integrantes:
 Juan Diego Reyes Martinez - Codigo: 161004329
 Diego Andres Chavez - Código: 1006820738
-
-
-Un juego interactivo donde los jugadores intentan adivinar un número secreto de 4 cifras con dígitos diferentes. El juego soporta tanto modo individual como multijugador.
 
 ## Historias de Usuario y Criterios de Aceptación
 
